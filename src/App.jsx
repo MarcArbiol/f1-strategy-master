@@ -559,116 +559,431 @@ export default function F1StrategyMaster() {
 
   // ─── PRE-RACE SCREEN ────────────────────────────────────────────────────────
   if (phase === "pre") {
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+    const [selectedCircuit, setSelectedCircuit] = useState(0);
+    const circ = CIRCUITS[selectedCircuit];
+
+    const tutorialSteps = [
+      {
+        icon: "👁",
+        title: "MONITOR THE TIRES",
+        color: "var(--teal)",
+        desc: "Watch the Tire Degradation chart in real time. The colored line is your ACTUAL wear. The gold dashed line is the MODEL PREDICTION. The grey line is the historical average from past races.",
+        tip: "When your actual line drops BELOW the historical average, your tires are degrading faster than normal — time to think about pitting.",
+      },
+      {
+        icon: "🎯",
+        title: "PREDICT YOUR PIT WINDOW",
+        color: "var(--green)",
+        desc: "Before your tires hit the cliff (below 65% health), use the Pit Window Predictor panel to select which lap you want to pit on. A gold star marks the model's optimal suggestion.",
+        tip: "Don't wait too long! Once tires cliff, lap times drop sharply and you lose positions. Pit 2–3 laps before the cliff for best results.",
+      },
+      {
+        icon: "🔧",
+        title: "EXECUTE THE PIT STOP",
+        color: "var(--orange)",
+        desc: "When your committed lap arrives, the BOX BOX BOX screen appears. You must choose your next tire compound. Each compound has different speed, grip, and longevity trade-offs.",
+        tip: "If you're leading, fit Hards to cover more laps. If you're chasing, fit Softs for maximum attack pace.",
+      },
+      {
+        icon: "🏆",
+        title: "SCORE POINTS",
+        color: "var(--gold)",
+        desc: "You earn points every lap for tire management (+5 healthy, -5 cliffed) and a big bonus for how closely your pit prediction matched the AI engineer's optimal window.",
+        tip: "A perfect prediction (within 1 lap of optimal) earns up to 200 bonus points. Aim for an S-rank score of 2000+.",
+      },
+    ];
+
     return (
       <>
         <GlobalStyles />
+        <style>{`
+          @keyframes staggerIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+          .stagger-1{animation:staggerIn 0.5s ease 0.1s both}
+          .stagger-2{animation:staggerIn 0.5s ease 0.2s both}
+          .stagger-3{animation:staggerIn 0.5s ease 0.3s both}
+          .stagger-4{animation:staggerIn 0.5s ease 0.4s both}
+          .stagger-5{animation:staggerIn 0.5s ease 0.5s both}
+          .stagger-6{animation:staggerIn 0.5s ease 0.6s both}
+          .hover-lift{transition:transform 0.2s,box-shadow 0.2s}
+          .hover-lift:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+        `}</style>
+
+        {/* Tutorial Modal */}
+        {showTutorial && (
+          <div style={{
+            position: "fixed", inset: 0, zIndex: 1000,
+            background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}>
+            <div style={{
+              maxWidth: 520, width: "100%",
+              background: "linear-gradient(135deg, #0e1118 0%, #0a0c10 100%)",
+              border: "1px solid var(--border)", borderRadius: 6,
+              overflow: "hidden", animation: "staggerIn 0.3s ease both",
+            }}>
+              {/* Modal header */}
+              <div style={{
+                background: `linear-gradient(90deg, ${tutorialSteps[tutorialStep].color}20, transparent)`,
+                borderBottom: "1px solid var(--border)", padding: "16px 20px",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+              }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color: tutorialSteps[tutorialStep].color, letterSpacing: 3 }}>
+                  HOW TO PLAY — STEP {tutorialStep + 1} OF {tutorialSteps.length}
+                </div>
+                <button onClick={() => setShowTutorial(false)} style={{
+                  background: "none", border: "1px solid var(--border)", color: "var(--dim)",
+                  fontFamily: "var(--font-mono)", fontSize: 11, cursor: "pointer",
+                  padding: "4px 10px", borderRadius: 2,
+                }}>✕ CLOSE</button>
+              </div>
+
+              {/* Progress bar */}
+              <div style={{ height: 3, background: "var(--border)" }}>
+                <div style={{
+                  height: "100%", background: tutorialSteps[tutorialStep].color,
+                  width: `${((tutorialStep + 1) / tutorialSteps.length) * 100}%`,
+                  transition: "width 0.4s ease",
+                }} />
+              </div>
+
+              {/* Step dots */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, padding: "16px 0 0" }}>
+                {tutorialSteps.map((_, i) => (
+                  <button key={i} onClick={() => setTutorialStep(i)} style={{
+                    width: i === tutorialStep ? 24 : 8, height: 8, borderRadius: 4,
+                    background: i === tutorialStep ? tutorialSteps[tutorialStep].color : "var(--border)",
+                    border: "none", cursor: "pointer", transition: "all 0.3s",
+                  }} />
+                ))}
+              </div>
+
+              {/* Content */}
+              <div style={{ padding: "20px 24px 24px" }}>
+                <div style={{ fontSize: 40, textAlign: "center", marginBottom: 12 }}>
+                  {tutorialSteps[tutorialStep].icon}
+                </div>
+                <div style={{
+                  fontFamily: "var(--font-display)", fontSize: 14,
+                  color: tutorialSteps[tutorialStep].color, letterSpacing: 2,
+                  textAlign: "center", marginBottom: 16,
+                }}>
+                  {tutorialSteps[tutorialStep].title}
+                </div>
+                <div style={{
+                  fontFamily: "var(--font-body)", fontSize: 15, color: "var(--text)",
+                  lineHeight: 1.7, marginBottom: 16, textAlign: "center",
+                }}>
+                  {tutorialSteps[tutorialStep].desc}
+                </div>
+                <div style={{
+                  background: `${tutorialSteps[tutorialStep].color}10`,
+                  border: `1px solid ${tutorialSteps[tutorialStep].color}40`,
+                  borderRadius: 3, padding: "12px 16px",
+                }}>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: tutorialSteps[tutorialStep].color, letterSpacing: 2, marginBottom: 6 }}>
+                    💡 PRO TIP
+                  </div>
+                  <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text)", lineHeight: 1.6 }}>
+                    {tutorialSteps[tutorialStep].tip}
+                  </div>
+                </div>
+
+                {/* Nav buttons */}
+                <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+                  <button onClick={() => setTutorialStep(s => Math.max(0, s - 1))}
+                    disabled={tutorialStep === 0}
+                    style={{
+                      flex: 1, padding: "10px", fontFamily: "var(--font-display)", fontSize: 10,
+                      letterSpacing: 2, border: "1px solid var(--border)",
+                      background: "transparent", color: tutorialStep === 0 ? "var(--muted)" : "var(--text)",
+                      cursor: tutorialStep === 0 ? "not-allowed" : "pointer", borderRadius: 2,
+                    }}>← PREV</button>
+                  {tutorialStep < tutorialSteps.length - 1 ? (
+                    <button onClick={() => setTutorialStep(s => s + 1)} style={{
+                      flex: 2, padding: "10px", fontFamily: "var(--font-display)", fontSize: 10,
+                      letterSpacing: 2, border: `1px solid ${tutorialSteps[tutorialStep].color}`,
+                      background: `${tutorialSteps[tutorialStep].color}15`,
+                      color: tutorialSteps[tutorialStep].color,
+                      cursor: "pointer", borderRadius: 2,
+                    }}>NEXT →</button>
+                  ) : (
+                    <button onClick={() => setShowTutorial(false)} style={{
+                      flex: 2, padding: "10px", fontFamily: "var(--font-display)", fontSize: 10,
+                      letterSpacing: 2, border: "1px solid var(--green)",
+                      background: "rgba(0,255,135,0.1)", color: "var(--green)",
+                      cursor: "pointer", borderRadius: 2,
+                    }}>GOT IT — LET'S RACE ✓</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div style={{
-          minHeight: "100vh", display: "flex", flexDirection: "column",
-          alignItems: "center", justifyContent: "center",
-          background: "radial-gradient(ellipse at center, #0d0f18 0%, #050608 70%)",
-          padding: 24,
+          minHeight: "100vh",
+          background: "radial-gradient(ellipse at 30% 20%, #0f1420 0%, #050608 60%)",
+          overflowY: "auto",
         }}>
           {/* Decorative grid */}
           <div style={{
-            position: "fixed", inset: 0, opacity: 0.03,
+            position: "fixed", inset: 0, opacity: 0.025,
             backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+            backgroundSize: "50px 50px", pointerEvents: "none",
           }} />
-          {/* Red stripe */}
+          {/* Top accent line */}
           <div style={{
             position: "fixed", top: 0, left: 0, right: 0, height: 3,
-            background: "linear-gradient(90deg, transparent, var(--accent), transparent)",
+            background: "linear-gradient(90deg, transparent 0%, var(--accent) 40%, var(--gold) 60%, transparent 100%)",
           }} />
 
-          <div style={{ position: "relative", zIndex: 1, maxWidth: 600, width: "100%", textAlign: "center" }}>
-            {/* Logo */}
-            <div style={{ marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-              <div style={{ width: 40, height: 3, background: "var(--accent)" }} />
-              <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--dim)", letterSpacing: 4 }}>F1 TELEMETRY SIM v2.4</div>
-              <div style={{ width: 40, height: 3, background: "var(--accent)" }} />
-            </div>
-            <h1 style={{
-              fontFamily: "var(--font-display)", fontSize: "clamp(28px, 7vw, 56px)",
-              fontWeight: 900, color: "#fff", lineHeight: 1.05,
-              textShadow: "0 0 40px rgba(232,0,45,0.4)",
-              marginBottom: 4,
-            }}>
-              STRATEGY<br /><span style={{ color: "var(--accent)" }}>MASTER</span>
-            </h1>
-            <div style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--dim)", marginBottom: 40, fontWeight: 300, letterSpacing: 3 }}>
-              RACE ENGINEER SIMULATOR
+          <div style={{ maxWidth: 900, margin: "0 auto", padding: "48px 24px 60px", position: "relative", zIndex: 1 }}>
+
+            {/* Hero */}
+            <div className="stagger-1" style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 16 }}>
+                <div style={{ width: 60, height: 1, background: "linear-gradient(90deg, transparent, var(--accent))" }} />
+                <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--dim)", letterSpacing: 5 }}>F1 TELEMETRY SIM v2.4</div>
+                <div style={{ width: 60, height: 1, background: "linear-gradient(90deg, var(--accent), transparent)" }} />
+              </div>
+              <h1 style={{
+                fontFamily: "var(--font-display)", fontSize: "clamp(36px, 8vw, 72px)",
+                fontWeight: 900, lineHeight: 1, marginBottom: 12,
+                background: "linear-gradient(135deg, #ffffff 0%, #c8d0e0 50%, #e8002d 100%)",
+                WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              }}>
+                STRATEGY<br />MASTER
+              </h1>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 15, color: "var(--dim)", letterSpacing: 4, marginBottom: 20 }}>
+                RACE ENGINEER SIMULATOR
+              </div>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 16, color: "var(--text)", maxWidth: 500, margin: "0 auto", lineHeight: 1.7 }}>
+                Step into the pitwall. Manage tire degradation, predict the perfect pit window, and outsmart the AI engineer to lead your driver to victory.
+              </div>
             </div>
 
-            <GlassPanel style={{ padding: 24, marginBottom: 24, textAlign: "left" }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--teal)", letterSpacing: 3, marginBottom: 16 }}>
-                MISSION BRIEFING
-              </div>
-              {[
-                ["MONITOR", "Track live tire degradation vs historical data"],
-                ["PREDICT", "Select the optimal pit window before it's too late"],
-                ["REACT", "Choose the right compound after the stop"],
-                ["SCORE", "Earn points for strategy accuracy & tire management"],
-              ].map(([k, v]) => (
-                <div key={k} style={{ display: "flex", gap: 12, marginBottom: 10, alignItems: "flex-start" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--accent)", letterSpacing: 2, marginTop: 2, minWidth: 60 }}>{k}</div>
-                  <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--text)" }}>{v}</div>
-                </div>
-              ))}
-            </GlassPanel>
+            {/* How to play button + quick stats */}
+            <div className="stagger-2" style={{ display: "flex", justifyContent: "center", marginBottom: 40 }}>
+              <button onClick={() => { setShowTutorial(true); setTutorialStep(0); }} className="hover-lift" style={{
+                padding: "12px 32px", fontFamily: "var(--font-display)", fontSize: 11,
+                letterSpacing: 3, border: "1px solid var(--teal)",
+                background: "rgba(0,212,255,0.08)", color: "var(--teal)",
+                cursor: "pointer", borderRadius: 3, display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <span style={{ fontSize: 16 }}>📖</span> HOW TO PLAY
+              </button>
+            </div>
 
-            <GlassPanel style={{ padding: 20, marginBottom: 32 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--gold)", letterSpacing: 3, marginBottom: 12 }}>
-                CIRCUIT — {CIRCUIT.name.toUpperCase()}
+            {/* Quick reference cards */}
+            <div className="stagger-3" style={{ marginBottom: 40 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--dim)", letterSpacing: 4, textAlign: "center", marginBottom: 16 }}>
+                GAME OVERVIEW
               </div>
-              <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
                 {[
-                  ["LAPS", CIRCUIT.laps],
-                  ["FUEL", `${CIRCUIT.fuel}kg`],
-                  ["STINTS", "1–3"],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ textAlign: "center" }}>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 20, color: "var(--text)", fontWeight: 700 }}>{v}</div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--dim)", letterSpacing: 2 }}>{k}</div>
+                  { icon: "📊", color: "var(--teal)",   title: "MONITOR",  desc: "Watch live tire wear against the historical average and your predicted curve in real time." },
+                  { icon: "🎯", color: "var(--green)",  title: "PREDICT",  desc: "Choose the lap you want to pit on before the tires reach the critical cliff zone." },
+                  { icon: "⚡", color: "var(--orange)", title: "REACT",    desc: "Select the right compound after the stop — speed vs. durability trade-off matters." },
+                  { icon: "🏆", color: "var(--gold)",   title: "SCORE",    desc: "Earn points for tire management and prediction accuracy. Beat the AI engineer rating." },
+                ].map(({ icon, color, title, desc }) => (
+                  <div key={title} className="hover-lift" style={{
+                    background: "linear-gradient(135deg, rgba(10,12,16,0.9), rgba(14,17,24,0.8))",
+                    border: `1px solid ${color}30`, borderRadius: 4, padding: 16,
+                    borderTop: `2px solid ${color}`,
+                  }}>
+                    <div style={{ fontSize: 24, marginBottom: 8 }}>{icon}</div>
+                    <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color, letterSpacing: 2, marginBottom: 8 }}>{title}</div>
+                    <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--dim)", lineHeight: 1.6 }}>{desc}</div>
                   </div>
                 ))}
               </div>
-            </GlassPanel>
-
-            <div style={{ marginBottom: 20 }}>
-              <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--dim)", letterSpacing: 3, marginBottom: 12 }}>
-                START ON COMPOUND
-              </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-                {Object.keys(TIRE_COMPOUNDS).map(cmp => {
-                  const tc = TIRE_COMPOUNDS[cmp];
-                  return (
-                    <button key={cmp} onClick={() => setCompound(cmp)} style={{
-                      padding: "12px 20px", border: `2px solid ${compound === cmp ? tc.color : "var(--border)"}`,
-                      background: compound === cmp ? `${tc.color}20` : "transparent",
-                      color: compound === cmp ? tc.color : "var(--dim)",
-                      fontFamily: "var(--font-display)", fontSize: 11, letterSpacing: 2,
-                      cursor: "pointer", borderRadius: 3, transition: "all 0.2s",
-                      display: "flex", alignItems: "center", gap: 8,
-                    }}>
-                      <TireIcon compound={cmp} size={24} />
-                      {cmp}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
 
-            <button onClick={startRace} style={{
-              width: "100%", padding: "18px", fontFamily: "var(--font-display)",
-              fontSize: 16, letterSpacing: 4, color: "#fff",
-              background: "linear-gradient(135deg, var(--accent) 0%, #ff4d6d 100%)",
-              border: "none", borderRadius: 3, cursor: "pointer",
-              boxShadow: "0 0 30px rgba(232,0,45,0.4)",
-              animation: "glow 2s infinite",
-              transition: "transform 0.1s",
-            }}>
-              LIGHTS OUT →
-            </button>
+            {/* Tire compound guide */}
+            <div className="stagger-4" style={{ marginBottom: 40 }}>
+              <GlassPanel style={{ padding: 20 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--dim)", letterSpacing: 4, marginBottom: 16 }}>
+                  TIRE COMPOUND GUIDE
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                  {Object.entries(TIRE_COMPOUNDS).map(([name, data]) => (
+                    <div key={name} style={{
+                      background: `${data.color}08`, border: `1px solid ${data.color}40`,
+                      borderRadius: 3, padding: "14px 12px", textAlign: "center",
+                    }}>
+                      <TireIcon compound={name} size={36} />
+                      <div style={{ fontFamily: "var(--font-display)", fontSize: 11, color: data.color, letterSpacing: 2, margin: "10px 0 6px" }}>{name}</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        {[
+                          ["MAX LIFE", `${data.maxLife} laps`],
+                          ["GRIP",     `${(data.grip * 100).toFixed(0)}%`],
+                          ["WEAR",     name === "SOFT" ? "HIGH" : name === "MEDIUM" ? "MEDIUM" : "LOW"],
+                        ].map(([k, v]) => (
+                          <div key={k} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 10 }}>
+                            <span style={{ color: "var(--dim)" }}>{k}</span>
+                            <span style={{ color: data.color }}>{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div style={{
+                        marginTop: 10, fontFamily: "var(--font-body)", fontSize: 11,
+                        color: "var(--dim)", lineHeight: 1.5,
+                      }}>
+                        {name === "SOFT" ? "Fastest but wears quickly. Best for short stints or qualifying pace." :
+                         name === "MEDIUM" ? "Balanced choice. Good for middle stints and flexible strategy." :
+                         "Slowest but lasts longest. Ideal for long stints and fuel-saving."}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* Circuit selector + setup */}
+            <div className="stagger-5" style={{ marginBottom: 32 }}>
+              <GlassPanel style={{ padding: 20 }} glow="var(--gold)">
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--gold)", letterSpacing: 4, marginBottom: 16 }}>
+                  RACE SETUP
+                </div>
+
+                {/* Circuit selector */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--dim)", letterSpacing: 2, marginBottom: 10 }}>SELECT CIRCUIT</div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                    {CIRCUITS.map((c, i) => (
+                      <button key={i} onClick={() => setSelectedCircuit(i)} style={{
+                        padding: "10px 14px", border: `1px solid ${selectedCircuit === i ? "var(--gold)" : "var(--border)"}`,
+                        background: selectedCircuit === i ? "rgba(255,215,0,0.08)" : "transparent",
+                        color: selectedCircuit === i ? "var(--gold)" : "var(--dim)",
+                        fontFamily: "var(--font-body)", fontSize: 13, fontWeight: 600,
+                        cursor: "pointer", borderRadius: 3, textAlign: "left",
+                        transition: "all 0.2s",
+                      }}>
+                        <div>{c.name}</div>
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                          {c.laps} laps · {c.fuel}kg fuel
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Circuit info bar */}
+                <div style={{
+                  display: "flex", gap: 0, marginBottom: 24,
+                  border: "1px solid var(--border)", borderRadius: 3, overflow: "hidden",
+                }}>
+                  {[
+                    ["CIRCUIT", circ.name],
+                    ["LAPS",    circ.laps],
+                    ["FUEL",    `${circ.fuel}kg`],
+                    ["STINTS",  "1–3"],
+                    ["DIFF",    selectedCircuit === 3 ? "HARD" : selectedCircuit === 0 ? "MEDIUM" : "EASY"],
+                  ].map(([k, v], i, arr) => (
+                    <div key={k} style={{
+                      flex: 1, padding: "10px 8px", textAlign: "center",
+                      borderRight: i < arr.length - 1 ? "1px solid var(--border)" : "none",
+                      background: i % 2 === 0 ? "rgba(255,255,255,0.01)" : "transparent",
+                    }}>
+                      <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--dim)", marginBottom: 4 }}>{k}</div>
+                      <div style={{ fontFamily: "var(--font-display)", fontSize: 12, color: "var(--text)" }}>{v}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Starting compound */}
+                <div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 10, color: "var(--dim)", letterSpacing: 2, marginBottom: 10 }}>
+                    STARTING COMPOUND
+                    <span style={{ marginLeft: 8, color: "var(--muted)", fontSize: 9 }}>— affects early strategy window</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 10 }}>
+                    {Object.entries(TIRE_COMPOUNDS).map(([cmp, data]) => (
+                      <button key={cmp} onClick={() => setCompound(cmp)} style={{
+                        flex: 1, padding: "14px 8px",
+                        border: `2px solid ${compound === cmp ? data.color : "var(--border)"}`,
+                        background: compound === cmp ? `${data.color}15` : "transparent",
+                        color: compound === cmp ? data.color : "var(--dim)",
+                        fontFamily: "var(--font-display)", fontSize: 10, letterSpacing: 1,
+                        cursor: "pointer", borderRadius: 3, transition: "all 0.2s",
+                        display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                      }}>
+                        <TireIcon compound={cmp} size={28} />
+                        <div>{cmp}</div>
+                        <div style={{ fontSize: 8, color: "var(--dim)", fontFamily: "var(--font-mono)" }}>
+                          {data.maxLife}L MAX
+                        </div>
+                        {compound === cmp && (
+                          <div style={{ fontSize: 8, color: data.color, fontFamily: "var(--font-mono)", letterSpacing: 1 }}>
+                            SELECTED ✓
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* Scoring guide */}
+            <div className="stagger-5" style={{ marginBottom: 32 }}>
+              <GlassPanel style={{ padding: 20 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--dim)", letterSpacing: 4, marginBottom: 14 }}>
+                  SCORING SYSTEM
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+                  {[
+                    { grade: "S", min: 2000, color: "var(--gold)",   label: "RACE WINNER",    desc: "Perfect strategy, optimal pits" },
+                    { grade: "A", min: 1600, color: "var(--green)",  label: "PODIUM",         desc: "Strong calls, minimal mistakes" },
+                    { grade: "B", min: 1200, color: "var(--teal)",   label: "POINTS FINISH",  desc: "Decent strategy, some errors" },
+                    { grade: "C", min: 800,  color: "var(--orange)", label: "MIDFIELD",       desc: "Reactive, not proactive" },
+                    { grade: "D", min: 0,    color: "var(--accent)", label: "BACK OF GRID",   desc: "Tire management issues" },
+                  ].map(({ grade, min, color, label, desc }) => (
+                    <div key={grade} style={{
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "10px 12px", border: `1px solid ${color}30`,
+                      borderRadius: 3, background: `${color}05`,
+                    }}>
+                      <div style={{ fontFamily: "var(--font-display)", fontSize: 24, color, lineHeight: 1, minWidth: 28 }}>{grade}</div>
+                      <div>
+                        <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color, letterSpacing: 1 }}>{label}</div>
+                        <div style={{ fontFamily: "var(--font-mono)", fontSize: 9, color: "var(--dim)" }}>{min}+ pts</div>
+                        <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* CTA */}
+            <div className="stagger-6" style={{ display: "flex", gap: 12, flexDirection: "column" }}>
+              <button onClick={startRace} style={{
+                width: "100%", padding: "20px", fontFamily: "var(--font-display)",
+                fontSize: 18, letterSpacing: 5, color: "#fff",
+                background: "linear-gradient(135deg, var(--accent) 0%, #c8001f 100%)",
+                border: "none", borderRadius: 3, cursor: "pointer",
+                boxShadow: "0 0 40px rgba(232,0,45,0.35), 0 4px 20px rgba(0,0,0,0.5)",
+                animation: "glow 2.5s infinite",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 16,
+              }}>
+                <span>LIGHTS OUT</span>
+                <span style={{ fontSize: 22 }}>🏎</span>
+                <span style={{ fontSize: 13, opacity: 0.7, letterSpacing: 2 }}>AND AWAY WE GO</span>
+              </button>
+              <button onClick={() => { setShowTutorial(true); setTutorialStep(0); }} style={{
+                width: "100%", padding: "12px", fontFamily: "var(--font-display)",
+                fontSize: 11, letterSpacing: 3, color: "var(--dim)",
+                background: "transparent", border: "1px solid var(--border)",
+                borderRadius: 3, cursor: "pointer",
+              }}>
+                FIRST TIME? READ THE TUTORIAL FIRST →
+              </button>
+            </div>
+
           </div>
         </div>
       </>
@@ -677,46 +992,114 @@ export default function F1StrategyMaster() {
 
   // ─── PIT STOP SCREEN ────────────────────────────────────────────────────────
   if (phase === "pitstop") {
+    const lapsRemaining = TOTAL_LAPS - currentLap;
+    const getRecommendation = (cmp) => {
+      if (cmp === "SOFT"   && lapsRemaining <= 20) return { tag: "RECOMMENDED", reason: "Perfect for remaining laps" };
+      if (cmp === "MEDIUM" && lapsRemaining <= 35 && lapsRemaining > 20) return { tag: "RECOMMENDED", reason: "Ideal range for remaining distance" };
+      if (cmp === "HARD"   && lapsRemaining > 35)  return { tag: "RECOMMENDED", reason: "Only option for long remaining stint" };
+      if (cmp === "SOFT"   && lapsRemaining > 20)  return { tag: "RISKY", reason: "May not last to the end" };
+      if (cmp === "HARD"   && lapsRemaining <= 20) return { tag: "SLOW", reason: "Unnecessary durability, loses time" };
+      return { tag: null, reason: null };
+    };
+
     return (
       <>
         <GlobalStyles />
         <div style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center",
-          background: "radial-gradient(ellipse, #1a0a00 0%, #050608 70%)",
+          background: "radial-gradient(ellipse at center, #150800 0%, #050608 70%)",
           padding: 24,
         }}>
+          {/* Flashing header */}
           <div style={{
-            fontFamily: "var(--font-display)", fontSize: "clamp(24px, 6vw, 48px)",
-            color: "var(--orange)", textAlign: "center", marginBottom: 8,
-            animation: "glow 0.8s infinite",
+            fontFamily: "var(--font-display)", fontSize: "clamp(28px, 7vw, 56px)",
+            color: "var(--orange)", textAlign: "center", marginBottom: 4,
+            animation: "glow 0.6s infinite",
           }}>
             BOX BOX BOX
           </div>
-          <div style={{ fontFamily: "var(--font-mono)", fontSize: 14, color: "var(--dim)", marginBottom: 32 }}>
-            LAP {currentLap} — SELECT NEW COMPOUND
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--dim)", marginBottom: 6 }}>
+            LAP {currentLap} PIT STOP — SELECT NEW COMPOUND
           </div>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center", maxWidth: 500 }}>
-            {Object.keys(TIRE_COMPOUNDS).filter(c => c !== compound || pitsMade > 0).map(cmp => {
-              const tc = TIRE_COMPOUNDS[cmp];
+          <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--teal)", marginBottom: 32 }}>
+            {lapsRemaining} LAPS REMAINING IN THE RACE
+          </div>
+
+          {/* Compound cards */}
+          <div style={{ display: "flex", gap: 14, flexWrap: "wrap", justifyContent: "center", maxWidth: 580, marginBottom: 28 }}>
+            {Object.entries(TIRE_COMPOUNDS).map(([cmp, tc]) => {
+              const rec = getRecommendation(cmp);
+              const isCurrent = cmp === compound && pitsMade === 0;
               return (
-                <button key={cmp} onClick={() => executePitStop(cmp)} style={{
-                  padding: "20px 28px", border: `2px solid ${tc.color}`,
-                  background: `${tc.color}15`,
-                  color: tc.color,
-                  fontFamily: "var(--font-display)", fontSize: 13, letterSpacing: 2,
-                  cursor: "pointer", borderRadius: 3, transition: "all 0.2s",
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
-                  minWidth: 120,
-                }}>
-                  <TireIcon compound={cmp} size={40} />
-                  <div>{cmp}</div>
-                  <div style={{ fontSize: 9, color: "var(--dim)", letterSpacing: 1 }}>
-                    MAX {tc.maxLife} LAPS
+                <button key={cmp} onClick={() => !isCurrent && executePitStop(cmp)}
+                  disabled={isCurrent}
+                  style={{
+                    padding: "20px 18px", border: `2px solid ${rec.tag === "RECOMMENDED" ? tc.color : isCurrent ? "var(--muted)" : tc.color + "60"}`,
+                    background: rec.tag === "RECOMMENDED" ? `${tc.color}18` : isCurrent ? "rgba(255,255,255,0.02)" : `${tc.color}08`,
+                    color: isCurrent ? "var(--muted)" : tc.color,
+                    fontFamily: "var(--font-display)", fontSize: 12, letterSpacing: 2,
+                    cursor: isCurrent ? "not-allowed" : "pointer", borderRadius: 4,
+                    transition: "all 0.2s", display: "flex", flexDirection: "column",
+                    alignItems: "center", gap: 8, minWidth: 140,
+                    boxShadow: rec.tag === "RECOMMENDED" ? `0 0 20px ${tc.color}30` : "none",
+                    position: "relative",
+                  }}>
+                  {/* Recommendation badge */}
+                  {rec.tag && !isCurrent && (
+                    <div style={{
+                      position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)",
+                      background: rec.tag === "RECOMMENDED" ? tc.color : rec.tag === "RISKY" ? "var(--orange)" : "var(--muted)",
+                      color: "#000", fontFamily: "var(--font-display)", fontSize: 8,
+                      letterSpacing: 1, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap",
+                    }}>{rec.tag}</div>
+                  )}
+                  {isCurrent && (
+                    <div style={{
+                      position: "absolute", top: -10, left: "50%", transform: "translateX(-50%)",
+                      background: "var(--muted)", color: "#fff", fontFamily: "var(--font-display)",
+                      fontSize: 8, letterSpacing: 1, padding: "3px 8px", borderRadius: 10, whiteSpace: "nowrap",
+                    }}>CURRENT</div>
+                  )}
+                  <TireIcon compound={cmp} size={44} />
+                  <div style={{ fontSize: 13 }}>{cmp}</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3, width: "100%" }}>
+                    {[
+                      ["LASTS",   `${tc.maxLife} laps`],
+                      ["GRIP",    `${(tc.grip * 100).toFixed(0)}%`],
+                      ["WEAR",    cmp === "SOFT" ? "HIGH" : cmp === "MEDIUM" ? "MED" : "LOW"],
+                    ].map(([k, v]) => (
+                      <div key={k} style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-mono)", fontSize: 9 }}>
+                        <span style={{ color: isCurrent ? "var(--muted)" : "var(--dim)" }}>{k}</span>
+                        <span>{v}</span>
+                      </div>
+                    ))}
                   </div>
+                  {rec.reason && !isCurrent && (
+                    <div style={{ fontFamily: "var(--font-body)", fontSize: 11, color: "var(--dim)", textAlign: "center", lineHeight: 1.4 }}>
+                      {rec.reason}
+                    </div>
+                  )}
                 </button>
               );
             })}
+          </div>
+
+          {/* Strategy tip */}
+          <div style={{
+            maxWidth: 480, background: "rgba(0,212,255,0.05)", border: "1px solid rgba(0,212,255,0.2)",
+            borderRadius: 3, padding: "12px 18px", textAlign: "center",
+          }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--teal)", letterSpacing: 2, marginBottom: 6 }}>
+              💡 ENGINEER ADVICE
+            </div>
+            <div style={{ fontFamily: "var(--font-body)", fontSize: 13, color: "var(--dim)", lineHeight: 1.6 }}>
+              {lapsRemaining <= 20
+                ? "Short stint remaining — Softs will give you the fastest pace to the flag without cliff risk."
+                : lapsRemaining <= 35
+                ? "Medium distance left — Mediums offer the best balance. Softs are risky unless you're chasing."
+                : "Long stint ahead — Hards are your only safe option. Softs or Mediums will force another stop."}
+            </div>
           </div>
         </div>
       </>
@@ -727,44 +1110,109 @@ export default function F1StrategyMaster() {
   if (phase === "result") {
     const grade = score >= 2000 ? "S" : score >= 1600 ? "A" : score >= 1200 ? "B" : score >= 800 ? "C" : "D";
     const gradeColor = { S: "var(--gold)", A: "var(--green)", B: "var(--teal)", C: "var(--orange)", D: "var(--accent)" }[grade];
+    const gradeFeedback = {
+      S: { title: "FLAWLESS STRATEGY", desc: "You called every pit window perfectly and managed the tires like a true race engineer. Mercedes would hire you." },
+      A: { title: "STRONG PERFORMANCE", desc: "Excellent tire management with only minor timing errors. You kept your driver in contention throughout." },
+      B: { title: "SOLID STRATEGY", desc: "Good instincts but a few laps off optimal on the pit calls. Better degradation reading needed." },
+      C: { title: "REACTIVE ENGINEER", desc: "You reacted to problems instead of predicting them. Study the degradation curves more carefully next time." },
+      D: { title: "BACK TO THE SIMULATOR", desc: "Tires were cliffed, pit timing was poor. Review the compound guide and practice reading the deg chart." },
+    }[grade];
+
     return (
       <>
         <GlobalStyles />
+        <style>{`@keyframes gradeReveal { 0%{opacity:0;transform:scale(0.5) rotate(-10deg)} 70%{transform:scale(1.1) rotate(2deg)} 100%{opacity:1;transform:scale(1) rotate(0deg)} }`}</style>
         <div style={{
           minHeight: "100vh", display: "flex", flexDirection: "column",
           alignItems: "center", justifyContent: "center", padding: 24,
-          background: "radial-gradient(ellipse, #0a0d05 0%, #050608 70%)",
+          background: `radial-gradient(ellipse at center, ${gradeColor}08 0%, #050608 60%)`,
         }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 11, color: "var(--dim)", letterSpacing: 4, marginBottom: 12 }}>
-            RACE COMPLETE — {CIRCUIT.name.toUpperCase()}
-          </div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 120, lineHeight: 1, color: gradeColor, marginBottom: 0, textShadow: `0 0 60px ${gradeColor}60` }}>
-            {grade}
-          </div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 13, color: gradeColor, letterSpacing: 4, marginBottom: 32 }}>
-            ENGINEER RATING
-          </div>
-          <GlassPanel style={{ padding: 24, width: "100%", maxWidth: 400, marginBottom: 24 }}>
-            {[
-              ["FINAL SCORE", score],
-              ["PIT STOPS", pitsMade],
-              ["TOTAL LAPS", TOTAL_LAPS],
-              ["BEST LAP", bestLap ? `${bestLap.toFixed(3)}s` : "—"],
-              ["PREDICTION ACC.", predictionAccuracy ? `${predictionAccuracy}%` : "—"],
-            ].map(([k, v]) => (
-              <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 0", borderBottom: "1px solid var(--border)" }}>
-                <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--dim)" }}>{k}</div>
-                <div style={{ fontFamily: "var(--font-display)", fontSize: 13, color: "var(--text)" }}>{v}</div>
+          <div style={{ maxWidth: 500, width: "100%" }}>
+
+            {/* Grade reveal */}
+            <div style={{ textAlign: "center", marginBottom: 32 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 10, color: "var(--dim)", letterSpacing: 4, marginBottom: 16 }}>
+                RACE COMPLETE — {CIRCUIT.name.toUpperCase()}
               </div>
-            ))}
-          </GlassPanel>
-          <button onClick={() => window.location.reload()} style={{
-            padding: "14px 40px", fontFamily: "var(--font-display)", fontSize: 13,
-            letterSpacing: 3, color: "#fff", background: "var(--accent)",
-            border: "none", borderRadius: 3, cursor: "pointer",
-          }}>
-            NEW RACE
-          </button>
+              <div style={{
+                fontFamily: "var(--font-display)", fontSize: 110, lineHeight: 1, color: gradeColor,
+                textShadow: `0 0 60px ${gradeColor}50`,
+                animation: "gradeReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+              }}>
+                {grade}
+              </div>
+              <div style={{ fontFamily: "var(--font-display)", fontSize: 14, color: gradeColor, letterSpacing: 3, marginBottom: 8 }}>
+                {gradeFeedback.title}
+              </div>
+              <div style={{ fontFamily: "var(--font-body)", fontSize: 14, color: "var(--dim)", lineHeight: 1.7, maxWidth: 380, margin: "0 auto" }}>
+                {gradeFeedback.desc}
+              </div>
+            </div>
+
+            {/* Stats breakdown */}
+            <GlassPanel style={{ padding: 0, marginBottom: 16, overflow: "hidden" }} glow={gradeColor}>
+              <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", background: `${gradeColor}08` }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: gradeColor, letterSpacing: 3 }}>RACE DEBRIEF</div>
+              </div>
+              {[
+                ["FINAL SCORE",       score,                                    gradeColor],
+                ["TOTAL LAPS",        TOTAL_LAPS,                               "var(--text)"],
+                ["PIT STOPS MADE",    pitsMade,                                 "var(--text)"],
+                ["BEST LAP TIME",     bestLap ? `${bestLap.toFixed(3)}s` : "—", "var(--teal)"],
+                ["PREDICTION ACC.",   predictionAccuracy ? `${predictionAccuracy}%` : "N/A", predictionAccuracy >= 80 ? "var(--green)" : predictionAccuracy >= 60 ? "var(--gold)" : "var(--accent)"],
+                ["STARTING COMPOUND", compound,                                 TIRE_COMPOUNDS[compound].color],
+              ].map(([k, v, color]) => (
+                <div key={k} style={{
+                  display: "flex", justifyContent: "space-between", alignItems: "center",
+                  padding: "11px 16px", borderBottom: "1px solid var(--border)",
+                }}>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--dim)" }}>{k}</div>
+                  <div style={{ fontFamily: "var(--font-display)", fontSize: 13, color }}>{v}</div>
+                </div>
+              ))}
+            </GlassPanel>
+
+            {/* What to improve */}
+            {grade !== "S" && (
+              <GlassPanel style={{ padding: 16, marginBottom: 20 }}>
+                <div style={{ fontFamily: "var(--font-display)", fontSize: 9, color: "var(--teal)", letterSpacing: 3, marginBottom: 12 }}>
+                  HOW TO IMPROVE
+                </div>
+                {[
+                  predictionAccuracy < 80  && "📍 Predict your pit window earlier — aim to commit 10+ laps before the cliff",
+                  pitsMade === 0           && "🔧 You never pitted! A 1-stop strategy is optimal on most circuits",
+                  score < 1200             && "📊 Watch the degradation chart closely — pit when actual wear crosses below historical average",
+                  predictionAccuracy > 80  && score < 1600 && "⏱ Good prediction but focus on tire management between stops for more lap points",
+                ].filter(Boolean).map((tip, i) => (
+                  <div key={i} style={{
+                    fontFamily: "var(--font-body)", fontSize: 13, color: "var(--text)",
+                    padding: "8px 0", borderBottom: "1px solid var(--border)", lineHeight: 1.5,
+                  }}>{tip}</div>
+                ))}
+              </GlassPanel>
+            )}
+
+            {/* Buttons */}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => window.location.reload()} style={{
+                flex: 2, padding: "16px", fontFamily: "var(--font-display)", fontSize: 13,
+                letterSpacing: 3, color: "#fff",
+                background: "linear-gradient(135deg, var(--accent), #c8001f)",
+                border: "none", borderRadius: 3, cursor: "pointer",
+                boxShadow: "0 0 20px rgba(232,0,45,0.3)",
+              }}>
+                🏎 NEW RACE
+              </button>
+              <button onClick={() => window.location.reload()} style={{
+                flex: 1, padding: "16px", fontFamily: "var(--font-display)", fontSize: 10,
+                letterSpacing: 2, color: "var(--dim)",
+                background: "transparent", border: "1px solid var(--border)",
+                borderRadius: 3, cursor: "pointer",
+              }}>
+                TUTORIAL
+              </button>
+            </div>
+          </div>
         </div>
       </>
     );
